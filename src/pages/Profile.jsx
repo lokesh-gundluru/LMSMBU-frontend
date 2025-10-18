@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import API from "../services/api";
+import { FaUser, FaEnvelope, FaLock } from "react-icons/fa";
 
 export default function Profile() {
   const [user, setUser] = useState({ name: "", email: "" });
@@ -18,7 +19,6 @@ export default function Profile() {
         setMessage("Failed to load profile data");
       }
     };
-
     fetchUser();
   }, []);
 
@@ -43,50 +43,68 @@ export default function Profile() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-50">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-96">
-        <h2 className="text-2xl font-semibold mb-4 text-center">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-white">
+      <div className="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md animate-fadeIn">
+        <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">
           My Profile
         </h2>
 
-        <form onSubmit={handleSubmit} className="flex flex-col space-y-3">
-          <input
-            name="name"
-            type="text"
-            value={user.name}
-            onChange={handleChange}
-            placeholder="Full Name"
-            className="border p-2 rounded-md"
-          />
-          <input
-            name="email"
-            type="email"
-            value={user.email}
-            onChange={handleChange}
-            placeholder="Email"
-            className="border p-2 rounded-md"
-          />
-          <input
-            name="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="New Password (optional)"
-            className="border p-2 rounded-md"
-          />
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-5">
+          <div className="relative">
+            <FaUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              name="name"
+              type="text"
+              value={user.name}
+              onChange={handleChange}
+              placeholder="Full Name"
+              className="w-full border border-gray-300 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div className="relative">
+            <FaEnvelope className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              name="email"
+              type="email"
+              value={user.email}
+              onChange={handleChange}
+              placeholder="Email"
+              className="w-full border border-gray-300 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+              required
+            />
+          </div>
+
+          <div className="relative">
+            <FaLock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <input
+              name="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="New Password (optional)"
+              className="w-full border border-gray-300 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+            />
+          </div>
+
           <button
             type="submit"
-            className="bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
+            className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold p-3 rounded-xl shadow-lg hover:scale-105 transform transition duration-300"
           >
             Save Changes
           </button>
         </form>
 
-        {message && <p className="text-center mt-4 text-sm">{message}</p>}
+        {message && (
+          <p className="text-center mt-5 text-sm text-indigo-600 font-medium animate-fadeIn">
+            {message}
+          </p>
+        )}
 
         <button
           onClick={() => (window.location.href = "/dashboard")}
-          className="mt-4 w-full bg-gray-200 text-gray-800 p-2 rounded-md hover:bg-gray-300"
+          className="mt-6 w-full bg-gray-200 text-gray-800 p-3 rounded-xl hover:bg-gray-300 transition font-medium"
         >
           Back to Dashboard
         </button>
