@@ -15,7 +15,7 @@ export default function Home() {
       {/* Hero Section */}
       <main className="flex flex-col items-center justify-center flex-grow text-center px-6 py-12 animate-fadeIn">
         <h2 className="text-5xl font-extrabold text-blue-700 mb-4">
-          <Learn>Learn</Learn> Smarter with MBU LMS 🎓
+          Learn Smarter with MBU LMS 🎓
         </h2>
         <p className="text-lg text-gray-600 max-w-2xl mb-8">
           A modern Learning Management System designed for MBU students and faculty.  
