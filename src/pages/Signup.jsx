@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // import useNavigate
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import { FaUser, FaEnvelope, FaLock, FaUserTag } from "react-icons/fa";
 
@@ -8,28 +8,47 @@ export default function Signup() {
     name: "",
     email: "",
     password: "",
-    role: "student", // default role
+    role: "student",
   });
   const [message, setMessage] = useState("");
-  const navigate = useNavigate(); // initialize navigate
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
     try {
+      // Step 1: Register the user
       const res = await API.post("/auth/register", form);
-      setMessage("Account created successfully!");
+      setMessage("✅ Account created successfully!");
 
-      // redirect to login after 2 seconds
+      // Step 2: Automatically log the user in
+      const loginRes = await API.post("/auth/login", {
+        email: form.email,
+        password: form.password,
+      });
+
+      if (loginRes.data.token) {
+        localStorage.setItem("token", loginRes.data.token);
+      }
+
+      // Step 3: Redirect based on role
       setTimeout(() => {
-        navigate("/dashboard");
+        if (form.role === "teacher") {
+          navigate("/dashboard"); // teacher dashboard handled automatically
+        } else {
+          navigate("/dashboard"); // student dashboard handled automatically
+        }
       }, 1000);
-
-      console.log(res.data);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Signup failed");
+      setMessage(err.response?.data?.message || "❌ Signup failed");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -96,14 +115,23 @@ export default function Signup() {
 
           <button
             type="submit"
-            className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold p-3 rounded-xl shadow-lg hover:scale-105 transform transition duration-300"
+            disabled={loading}
+            className={`${
+              loading
+                ? "bg-indigo-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:scale-105"
+            } text-white font-semibold p-3 rounded-xl shadow-lg transform transition duration-300`}
           >
-            Create Account
+            {loading ? "Creating..." : "Create Account"}
           </button>
         </form>
 
         {message && (
-          <p className="text-center mt-5 text-sm text-indigo-600 font-medium animate-fadeIn">
+          <p
+            className={`text-center mt-5 text-sm font-medium animate-fadeIn ${
+              message.includes("✅") ? "text-green-600" : "text-red-600"
+            }`}
+          >
             {message}
           </p>
         )}
