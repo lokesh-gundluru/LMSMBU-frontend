@@ -237,7 +237,7 @@ export default function TeacherDashboard({ user, handleLogout }) {
   <>
     {courses.map(course => {
       // Filter assignments for this course
-      const courseAssignments = assignments.filter(a => a.course === course._id);
+      const courseAssignments = allAssignments.filter(a => a.course === course._id);
 
       return (
         <div key={course._id} className="mt-6">
