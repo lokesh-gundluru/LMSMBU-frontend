@@ -10,9 +10,14 @@ export default function TeacherDashboard({ user, handleLogout }) {
   const [courses, setCourses] = useState([]);
   const [students, setStudents] = useState([]);
   const [assignments, setAssignments] = useState([]);
+
+  const [allAssignments, setAllAssignments] = useState([]);
+
   const [submissions, setSubmissions] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [showStudentsModal, setShowStudentsModal] = useState(false);
+  const [showAssignmentsModal, setShowAssignmentsModal] = useState(false);
 
   const [showAddCourse, setShowAddCourse] = useState(false);
   const [newCourse, setNewCourse] = useState({ title: "", description: "" });
@@ -40,8 +45,21 @@ export default function TeacherDashboard({ user, handleLogout }) {
         console.error(err);
       }
     };
+    const fetchAllAssignments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await API.get("/assignments", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAllAssignments(res.data);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchAllAssignments();
     fetchCourses();
   }, [user._id]);
+
 
   // View students for a course
   const handleViewStudents = async (courseId) => {
@@ -50,6 +68,7 @@ export default function TeacherDashboard({ user, handleLogout }) {
       const res = await API.get(`/courses/${courseId}/students`, { headers: { Authorization: `Bearer ${token}` } });
       setStudents(res.data);
       setSelectedCourse(courses.find(c => c._id === courseId));
+      setShowStudentsModal(true);
     } catch (err) {
       console.error(err);
     }
@@ -70,6 +89,7 @@ export default function TeacherDashboard({ user, handleLogout }) {
 
       setAssignments(assignmentsWithCount);
       setSelectedCourse(courses.find(c => c._id === courseId));
+      setShowAssignmentsModal(true);
     } catch (err) {
       console.error(err);
     }
@@ -137,7 +157,8 @@ export default function TeacherDashboard({ user, handleLogout }) {
   return (
     <div className="w-full max-w-6xl mx-auto mt-10 animate-fadeIn">
       {/* Profile Card */}
-      <div className="flex items-center gap-4 bg-white shadow-lg rounded-full p-4">
+      <br />
+      <div className="bg-white shadow-md rounded-3xl p-6 flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-indigo-500 flex items-center justify-center text-white text-2xl font-bold">
           {user.name.charAt(0)}
         </div>
@@ -160,7 +181,7 @@ export default function TeacherDashboard({ user, handleLogout }) {
         <div onClick={() => setActiveTab("assignments")} className="cursor-pointer bg-gradient-to-tr from-blue-100 via-cyan-100 to-white p-4 rounded-2xl shadow text-center">
           <FaClipboardList className="text-3xl text-blue-500 mx-auto mb-1"/>
           <h3 className="font-semibold text-gray-700">Assignments</h3>
-          <p className="text-gray-500 text-sm">{assignments.length}</p>
+          <p className="text-gray-500 text-sm">{allAssignments.length}</p>
         </div>
         <div className="bg-gradient-to-tr from-green-100 via-lime-100 to-white p-4 rounded-2xl shadow text-center">
           <FaUsers className="text-3xl text-green-500 mx-auto mb-1"/>
@@ -177,7 +198,12 @@ export default function TeacherDashboard({ user, handleLogout }) {
       {/* Courses List */}
       {activeTab === "courses" && (
         <>
+        <div className="flex justify-between items-center mt-6">
           <h2 className="text-xl font-bold mt-8 mb-4">Courses</h2>
+          <button onClick={() => setShowAddCourse(true)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">
+              <FaPlus /> 
+            </button>
+          </div>
           <div className="overflow-x-auto rounded-lg shadow">
             <table className="min-w-full bg-white">
               <thead className="bg-indigo-500 text-white">
@@ -207,14 +233,21 @@ export default function TeacherDashboard({ user, handleLogout }) {
       )}
 
       {/* Assignments List */}
-      {activeTab === "assignments" && selectedCourse && (
-        <>
-          <div className="flex justify-between items-center mt-6">
-            <h2 className="text-xl font-bold">{selectedCourse.title} - Assignments</h2>
-            <button onClick={() => setShowAddAssignment(true)} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">
-              <FaPlus /> 
+{activeTab === "assignments" && (
+  <>
+    {courses.map(course => {
+      // Filter assignments for this course
+      const courseAssignments = assignments.filter(a => a.course === course._id);
+
+      return (
+        <div key={course._id} className="mt-6">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-bold">{course.title} - Assignments</h2>
+            <button onClick={() => { setSelectedCourse(course); setShowAddAssignment(true); }} className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full">
+              <FaPlus />
             </button>
           </div>
+
           <div className="overflow-x-auto rounded-lg shadow mt-4">
             <table className="min-w-full bg-white">
               <thead className="bg-blue-500 text-white">
@@ -227,22 +260,33 @@ export default function TeacherDashboard({ user, handleLogout }) {
                 </tr>
               </thead>
               <tbody>
-                {assignments.map(a => (
-                  <tr key={a._id} className="border-b hover:bg-gray-50">
-                    <td className="py-2 px-4">{a.title}</td>
-                    <td className="py-2 px-4 line-clamp-2">{a.description}</td>
-                    <td className="py-2 px-4">{new Date(a.dueDate).toLocaleDateString()}</td>
-                    <td className="py-2 px-4">{a.submissionsCount || 0}</td>
-                    <td className="py-2 px-4 text-center">
-                      <button onClick={() => handleViewSubmissions(a._id)} className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-full text-sm">View Submissions</button>
+                {courseAssignments.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="py-2 px-4 text-center text-gray-500">
+                      No assignments for this course.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  courseAssignments.map(a => (
+                    <tr key={a._id} className="border-b hover:bg-gray-50">
+                      <td className="py-2 px-4">{a.title}</td>
+                      <td className="py-2 px-4 line-clamp-2">{a.description}</td>
+                      <td className="py-2 px-4">{new Date(a.dueDate).toLocaleDateString()}</td>
+                      <td className="py-2 px-4">{a.submissionsCount || 0}</td>
+                      <td className="py-2 px-4 text-center">
+                        <button onClick={() => handleViewSubmissions(a._id)} className="bg-indigo-500 hover:bg-indigo-600 text-white px-3 py-1 rounded-full text-sm">View Submissions</button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        </>
-      )}
+        </div>
+      );
+    })}
+  </>
+)}
 
       {/* Submissions Modal */}
       {showSubmissions && selectedAssignment && (
@@ -292,6 +336,74 @@ export default function TeacherDashboard({ user, handleLogout }) {
           </div>
         </div>
       )}
+
+            {/* Students Modal */}
+      {showStudentsModal && selectedCourse && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-lg w-96 p-6 relative">
+            <h3 className="text-xl font-semibold mb-4">
+              Students Enrolled in {selectedCourse.title}
+            </h3>
+
+            {students.length === 0 ? (
+              <p className="text-gray-500">No students enrolled yet.</p>
+            ) : (
+              <ul className="space-y-2">
+                {students.map((s) => (
+                  <li key={s._id} className="border p-2 rounded-md flex flex-col">
+                    <span className="font-medium">{s.name}</span>
+                    <span className="text-sm text-gray-500">{s.email}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <button
+              onClick={() => setShowStudentsModal(false)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-lg"
+            >
+              ✖
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Assignments Modal */}
+{showAssignmentsModal && selectedCourse && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl shadow-lg w-11/12 max-w-lg p-6 relative">
+      <h3 className="text-xl font-semibold mb-4">
+        Assignments for {selectedCourse.title}
+      </h3>
+
+      {assignments.length === 0 ? (
+        <p className="text-gray-500">No assignments created yet.</p>
+      ) : (
+        <ul className="space-y-3 max-h-80 overflow-y-auto">
+          {assignments.map((a) => (
+            <li key={a._id} className="border p-3 rounded-lg hover:bg-gray-50">
+              <p className="font-medium text-indigo-700">{a.title}</p>
+              <p className="text-sm text-gray-600 line-clamp-2">
+                {a.description}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Due: {new Date(a.dueDate).toLocaleDateString()}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <button
+        onClick={() => setShowAssignmentsModal(false)}
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-lg"
+      >
+        ✖
+      </button>
+    </div>
+  </div>
+)}
+
 
       {/* Add Course and Add Assignment Modals */}
       {showAddCourse && (

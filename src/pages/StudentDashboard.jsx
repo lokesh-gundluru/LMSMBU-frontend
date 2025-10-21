@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../services/api";
 import { 
-  FaSignOutAlt, FaBook, FaClipboardList, FaComments, FaBell, FaFileUpload 
+  FaSignOutAlt, FaBook, FaClipboardList, FaComments, FaBell, FaFileUpload ,FaUserCheck, FaUserTimes
 } from "react-icons/fa";
 
 export default function StudentDashboard({ user, handleLogout }) {
@@ -61,6 +61,28 @@ export default function StudentDashboard({ user, handleLogout }) {
   // Helper: get submission by current student
   const getSubmission = (assignment) => {
     return assignment.submissions?.find(s => s.student?._id === user._id) || null;
+  };
+
+  // Enroll in a course
+  const handleEnroll = async (courseId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await API.post(`/enrollments/${courseId}/enroll`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setEnrolledCourseIds(prev => [...prev, courseId]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Unenroll from a course
+  const handleUnenroll = async (courseId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await API.post(`/enrollments/${courseId}/unenroll`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setEnrolledCourseIds(prev => prev.filter(id => id !== courseId));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   // Pending assignments
@@ -138,8 +160,8 @@ export default function StudentDashboard({ user, handleLogout }) {
 
   return (
     <div className="w-full max-w-6xl mx-auto mt-10 animate-fadeIn">
-
       {/* Profile Card */}
+      <br />
       <div className="bg-white shadow-md rounded-3xl p-6 flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-indigo-500 text-white flex items-center justify-center text-2xl font-bold">
           {user.name.charAt(0).toUpperCase()}
@@ -179,24 +201,47 @@ export default function StudentDashboard({ user, handleLogout }) {
 
       {/* Courses List */}
       {activeTab === "courses" && (
-        <div className="mt-6">
-          <h2 className="text-lg font-bold mb-2">My Courses</h2>
-          <ul className="space-y-2">
-            {allCourses.filter(c => enrolledCourseIds.includes(c._id)).map(course => (
-              <li key={course._id} className="border p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => setSelectedCourse(course)}>
-                <p className="font-semibold">{course.title}</p>
-                <p className="text-gray-500 text-sm">{course.description}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <>
+        <h2 className="text-xl font-bold mt-8 mb-4">Courses</h2>
+        <div className="overflow-x-auto shadow rounded-lg">
+        <table className="min-w-full bg-white rounded-lg">
+          <thead className="bg-indigo-500 text-white text-left">
+            <tr>
+              <th className="py-2 px-4">Course</th>
+              <th className="py-2 px-4">Description</th>
+              <th className="py-2 px-4">Status</th>
+              <th className="py-2 px-4">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allCourses.map(course => {
+              const enrolled = enrolledCourseIds.includes(course._id);
+              return (
+                <tr key={course._id} className="border-b hover:bg-gray-50">
+                  <td className="py-2 px-4 font-medium">{course.title}</td>
+                  <td className="py-2 px-4 text-gray-500">{course.description}</td>
+                  <td className="py-2 px-4">
+                    {enrolled ? <span className="text-green-600 font-semibold flex items-center gap-1"><FaUserCheck /> Enrolled</span>
+                             : <span className="text-red-600 font-semibold flex items-center gap-1"><FaUserTimes /> Not Enrolled</span>}
+                  </td>
+                  <td className="py-2 px-4">
+                    {enrolled 
+                      ? <button onClick={() => handleUnenroll(course._id)} className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition">Unenroll</button>
+                      : <button onClick={() => handleEnroll(course._id)} className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 transition">Enroll</button>}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      </>
       )}
 
       {/* Assignments List */}
       {activeTab === "assignments" && (
         <div className="mt-6">
-          <h2 className="text-lg font-bold mb-2">Assignments</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">Assignments</h2>
           {enrolledCourseIds.map(courseId => {
             const course = allCourses.find(c => c._id === courseId);
             const courseAssignments = assignments.filter(a => a.course === courseId);
@@ -242,9 +287,9 @@ export default function StudentDashboard({ user, handleLogout }) {
       )}
 
       {/* Notifications List */}
-      {activeTab === "notifications" && (
+      {activeTab === "messages" && (
         <div className="mt-6">
-          <h2 className="text-lg font-bold mb-2">Notifications & Alerts</h2>
+          <h2 className="text-xl font-bold mt-8 mb-4">Messages</h2>
           <ul className="space-y-2">
             {dashboardNotifications.map(notif => (
               <li key={notif._id} className={`border p-3 rounded-lg ${notif.type === "deadline" ? "bg-red-50" : "bg-white"}`}>
@@ -255,6 +300,22 @@ export default function StudentDashboard({ user, handleLogout }) {
           </ul>
         </div>
       )}
+      
+      {/* Notifications List */}
+      {activeTab === "notifications" && (
+        <div className="mt-6">
+          <h2 className="text-xl font-bold mt-8 mb-4">Notifications & Alerts</h2>
+          <ul className="space-y-2">
+            {dashboardNotifications.map(notif => (
+              <li key={notif._id} className={`border p-3 rounded-lg ${notif.type === "deadline" ? "bg-red-50" : "bg-white"}`}>
+                <p className="font-semibold">{notif.title}</p>
+                <p className="text-gray-500 text-sm">{notif.message}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
 
       {/* Submission Modal */}
       {selectedAssignment && (
